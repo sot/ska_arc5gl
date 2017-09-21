@@ -1,3 +1,4 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
 """
 Access the Chandra archive via the arc5gl tool.
 """
