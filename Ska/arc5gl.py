@@ -9,7 +9,7 @@ import pexpect
 # Should put in a watchdog timer to exit from arc5gl after a period of inactivity
 import ska_helpers
 
-__version__ = ska_helpers.get_version(__package__)
+__version__ = ska_helpers.get_version(__name__)
 
 
 class Arc5gl(object):
