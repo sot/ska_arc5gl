@@ -39,7 +39,7 @@ class Arc5gl(object):
 
         self.prompt = 'ARC5GL> '
         spawn = pexpect.spawn if six.PY2 else pexpect.spawnu
-        self.arc5gl = spawn('/proj/sot/ska/bin/arc5gl', args=args, timeout=timeout)
+        self.arc5gl = spawn('arc5gl', args=args, timeout=timeout)
         self.arc5gl.expect(self.prompt)
         self.echo = echo
         self.arc5gl.setecho(echo)
