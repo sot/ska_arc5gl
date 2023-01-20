@@ -11,23 +11,26 @@ import os
 
 
 class Arc5gl(object):
+    """
+    Class to create an object to communicate with arc5gl.
+
+    Create an object for sending commands to arc5gl and waiting for the
+    prompt indicating command completion.  Example::
+
+        arc5gl = ska_arc5gl.Arc5gl()
+        arc5gl.sendline('obsid=21151')
+        arc5gl.sendline('get acis2{evt2}')
+        del arc5gl  # explicitly shut things down, good idea
+
+    If the file ``${HOME}/.arc5gl_user`` exists then the content will be taken
+    as the user name to pass to the ``arc5gl`` Perl application for authentication.
+    Otherwise the linux username will be used.
+
+    :param echo: echo arc5gl output (default=False)
+    :param timeout: wait for up to timeout seconds for response (default=100000)
+    """
+    args = ['--stdin']
     def __init__(self, echo=False, timeout=100000):
-        """Create an object for sending commands to arc5gl and waiting for the
-        prompt indicating command completion.  Example::
-
-          arc5gl = ska_arc5gl.Arc5gl()
-          arc5gl.sendline('obsid=21151')
-          arc5gl.sendline('get acis2{evt2}')
-          del arc5gl  # explicitly shut things down, good idea
-
-        If the file ``${HOME}/.arc5gl_user`` exists then the content will be taken
-        as the user name to pass to the ``arc5gl`` Perl application for authentication.
-        Otherwise the linux username will be used.
-
-        :param echo: echo arc5gl output (default=False)
-        :param timeout: wait for up to timeout seconds for response (default=100000)
-        """
-        args = ['--stdin']
 
         arc5gl_user_file = os.path.join(os.environ['HOME'], '.arc5gl_user')
         if os.path.exists(arc5gl_user_file):
