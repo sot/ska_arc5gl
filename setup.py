@@ -1,15 +1,24 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 from setuptools import setup
 
-setup(name='Ska.arc5gl',
+from ska_helpers.setup_helper import duplicate_package_info
+
+name = "ska_arc5gl"
+namespace = "Ska.arc5gl"
+
+packages = ["ska_arc5gl"]
+package_dir = {name: name}
+
+duplicate_package_info(packages, name, namespace)
+duplicate_package_info(package_dir, name, namespace)
+
+setup(name=name,
       author='Tom Aldcroft',
       description='Use arc5gl to access the Chandra archive',
       author_email='taldcroft@cfa.harvard.edu',
-      py_modules=['Ska.arc5gl'],
       use_scm_version=True,
       setup_requires=['setuptools_scm', 'setuptools_scm_git_archive'],
       zip_safe=False,
-      packages=['Ska'],
-      package_dir={'Ska': 'Ska'},
-      package_data={}
+      packages=packages,
+      package_dir=package_dir,
       )
