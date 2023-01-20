@@ -18,7 +18,7 @@ class Arc5gl(object):
         """Create an object for sending commands to arc5gl and waiting for the
         prompt indicating command completion.  Example::
 
-          arc5gl = Ska.arc5gl.Arc5gl()
+          arc5gl = ska_arc5gl.Arc5gl()
           arc5gl.sendline('obsid=21151')
           arc5gl.sendline('get acis2{evt2}')
           del arc5gl  # explicitly shut things down, good idea
