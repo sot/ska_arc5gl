@@ -29,11 +29,11 @@ class Arc5gl(object):
     :param echo: echo arc5gl output (default=False)
     :param timeout: wait for up to timeout seconds for response (default=100000)
     """
-    args = ['--stdin']
     def __init__(self, echo=False, timeout=100000):
         self.arc5gl = None
         self.echo = echo
 
+        args = ['--stdin']
         arc5gl_user_file = os.path.join(os.environ['HOME'], '.arc5gl_user')
         if os.path.exists(arc5gl_user_file):
             user = open(arc5gl_user_file).read().strip()
