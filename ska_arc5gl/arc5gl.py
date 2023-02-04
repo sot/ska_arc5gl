@@ -29,9 +29,11 @@ class Arc5gl(object):
     :param echo: echo arc5gl output (default=False)
     :param timeout: wait for up to timeout seconds for response (default=100000)
     """
-    args = ['--stdin']
     def __init__(self, echo=False, timeout=100000):
+        self.arc5gl = None
+        self.echo = echo
 
+        args = ['--stdin']
         arc5gl_user_file = os.path.join(os.environ['HOME'], '.arc5gl_user')
         if os.path.exists(arc5gl_user_file):
             user = open(arc5gl_user_file).read().strip()
@@ -41,7 +43,6 @@ class Arc5gl(object):
         spawn = pexpect.spawn if six.PY2 else pexpect.spawnu
         self.arc5gl = spawn('arc5gl', args=args, timeout=timeout)
         self.arc5gl.expect(self.prompt)
-        self.echo = echo
         self.arc5gl.setecho(echo)
 
     def sendline(self, line):
@@ -55,8 +56,9 @@ class Arc5gl(object):
             print(self.prompt + self.arc5gl.before)
 
     def __del__(self):
-        self.arc5gl.sendline('exit')
-        self.arc5gl.expect(pexpect.EOF)
-        self.arc5gl.close()
+        if self.arc5gl is not None:
+            self.arc5gl.sendline('exit')
+            self.arc5gl.expect(pexpect.EOF)
+            self.arc5gl.close()
         if self.echo:
             print('Closed arc5gl')
