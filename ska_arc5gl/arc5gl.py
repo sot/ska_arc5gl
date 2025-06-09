@@ -3,9 +3,13 @@
 Access the Chandra archive via the arc5gl tool.
 """
 
-import six
-import pexpect
 import os
+import re
+from pathlib import Path
+
+import pexpect
+import six
+from astropy.table import Table
 
 # Should put in a watchdog timer to exit from arc5gl after a period of inactivity
 
@@ -55,6 +59,164 @@ class Arc5gl(object):
         if self.echo:
             print(self.prompt + self.arc5gl.before)
 
+    def browse_(self, obsid, *products):
+        import time
+
+        all_products = [
+            "acis0",
+            "acis05",
+            "acis1",
+            "acis15",
+            "acis2",
+            "bias0",
+            "hrc0",
+            "hrc05",
+            "hrc1",
+            "hrc15",
+            "hrc2",
+            "aca0",
+            "pcad0",
+            "asp05",
+            "asp1",
+            "sim05",
+            "obspar",
+        ]
+        unknown = [prod for prod in products if prod not in all_products]
+        if unknown:
+            raise Exception(f"Unknown products: {', '.join(unknown)}")
+        if len(products) == 0:
+            products = all_products
+
+        self.arc5gl.sendline(f"obsid={obsid}")
+        self.arc5gl.expect(self.prompt)
+
+        for prod in products:
+            self.arc5gl.sendline(f"obsid={obsid}")
+            self.arc5gl.sendline(f"set {prod}")
+            self.arc5gl.sendline(f"products={prod}")
+            self.arc5gl.sendline("show")
+            self.arc5gl.sendline("browse")
+            self.arc5gl.sendline("clear")
+
+        text = ""
+        n_prompts = 0
+        while True:
+            line = self.arc5gl.read_nonblocking(10000, 10)
+            idx = 0
+            while (idx2 := line.find(self.prompt, idx)) >= 0:
+                idx = idx2 + 1
+                n_prompts += 1
+            text += line
+            if n_prompts == 6 * len(products):
+                break
+
+        files = []
+        current = {}
+        for line in text.splitlines():
+            line = line.replace(self.prompt, "")
+            if re.search("------", line):
+                file_info = current
+                current = {}
+            elif not line.strip() or re.search("Filename", line):
+                continue
+            elif re.search(" = ", line):
+                key, val = line.strip().split("=")
+                current[key] = val
+            else:
+                line = line.strip()
+                filename, size, date, time = line.split()
+                file_info.update({
+                    "filename": filename,
+                    "size": size,
+                    "date": date,
+                    "time": time,
+                })
+                files.append(file_info)
+
+        return Table(files), text
+
+
+
+    def browse(self, obsid, *products):
+        import re
+        import tempfile
+
+        all_products = [
+            "acis0",
+            "acis05",
+            "acis1",
+            "acis15",
+            "acis2",
+            "bias0",
+            "hrc0",
+            "hrc05",
+            "hrc1",
+            "hrc15",
+            "hrc2",
+            "aca0",
+            "pcad0",
+            "asp05",
+            "asp1",
+            "sim05",
+            "obspar",
+        ]
+        if len(products) == 0:
+            products = all_products
+
+        products = [
+            re.match("(?P<products>[a-z0-9]+)({(?P<pattern>[a-z0-9]+)})?", prod).groupdict()
+            for prod in products
+        ]
+
+        unknown = [prod["products"] for prod in products if prod["products"] not in all_products]
+        if unknown:
+            raise Exception(f"Unknown products: {', '.join(unknown)}")
+
+        with tempfile.NamedTemporaryFile(mode='w+', dir=os.getcwd()) as tf:
+            print(f"tempfile at {tf.name}")
+            filename = Path(tf.name)
+            for prod in products:
+                if prod["pattern"] is None:
+                    pattern = prod["products"]
+                else:
+                    pattern = f"{prod['products']}{{{prod['pattern']}}}"
+                tf.write(SCRIPT.format(obsid=obsid, products=prod["products"], prod_pattern=pattern))
+
+            print(f"sourcing {filename.name}")
+            self.arc5gl.sendline(f"source {filename.name}")
+
+        text = ""
+        while True:
+            line = self.arc5gl.read_nonblocking(10000, 10)
+            text += line
+            if line.find(self.prompt) >= 0:
+                break
+
+        files = []
+        current = {}
+        for line in text.splitlines():
+            if re.search("------", line):
+                file_info = current
+                current = {}
+            elif not line.strip() or re.search("Filename", line) or re.search(r"\+\+\+\+\+\+\+\+", line):
+                continue
+            elif re.search(" = ", line):
+                key, val = line.strip().split("=")
+                current[key] = val
+            elif len(line.split()) == 4:
+                line = line.strip()
+                filename, size, date, time = line.split()
+                file_info.update({
+                    "filename": filename,
+                    "size": size,
+                    "date": date,
+                    "time": time,
+                })
+                files.append(file_info)
+
+        t = Table(files)
+        return t, text
+
     def __del__(self):
         if self.arc5gl is not None:
             self.arc5gl.sendline('exit')
@@ -62,3 +224,14 @@ class Arc5gl(object):
             self.arc5gl.close()
         if self.echo:
             print('Closed arc5gl')
+
+
+
+SCRIPT = """echo ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+obsid={obsid}
+set {products}
+products={products}
+show
+browse {prod_pattern}
+clear
+"""
